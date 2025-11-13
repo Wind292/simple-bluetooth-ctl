@@ -6,6 +6,22 @@ use btleplug::api::{Central, Manager as _, ScanFilter};
 use btleplug::api::Peripheral as APIPeripheral;
 
 #[derive(Clone, Debug)]
+pub struct Device {
+    pub peripheral: Peripheral,
+    pub connection_strength: Option<i16>,
+    pub display_name: Option<String>,
+    pub adress: String,
+    pub index: Option<usize>
+}
+
+impl Device {
+    pub fn new(peripheral: Peripheral,connection_strength: Option<i16>,display_name: Option<String>,adress: String,index: Option<usize>) -> Self {
+        Device { peripheral, connection_strength, display_name, adress, index }
+    }
+}
+
+
+#[derive(Clone, Debug)]
 pub struct Instance {
     manager: Option<Manager>,
     adapter: Option<Adapter>,
@@ -37,9 +53,9 @@ impl Instance {
 
 
     // Takes about 3ms which is plenty fast
-    pub async fn get_scanned_devices(&mut self) -> Vec<(Peripheral, Option<i16>, Option<String>, String)> { // Peripheral, signal strength, display name, mac adress
+    pub async fn get_scanned_devices(&mut self) -> Vec<Device> { // Peripheral, signal strength, display name, mac adress
         let devices  = self.adapter.clone().unwrap().peripherals().await.unwrap();
-        let mut device_signal_list: Vec<(Peripheral, Option<i16>, Option<String>, String)> = Vec::new();
+        let mut device_signal_list: Vec<Device> = Vec::new();
 
         for device in devices {
             let properties = device.properties().await.unwrap_or_default().unwrap_or_default();
@@ -47,12 +63,11 @@ impl Instance {
             let adress = properties.address.to_string();
             let signal = properties.rssi;
             let name = properties.local_name;
-            device_signal_list.push((device, signal, name, adress));
+            device_signal_list.push(Device::new(device, signal, name, adress, None));
         }
 
-        device_signal_list.sort_by(|d1, d2| {sort_devices_check((d1.1, d1.2.clone(), d1.3.clone()), (d2.1, d2.2.clone(), d2.3.clone()))});
+        device_signal_list.sort_by(|d1, d2| {sort_devices_check((d1.connection_strength, d1.display_name.clone(), d1.adress.clone()), (d2.connection_strength, d2.display_name.clone(), d2.adress.clone()))});
         device_signal_list
-
     }
 
     async fn update_adapters(&mut self){
