@@ -1,0 +1,1 @@
+std::sync::MutexGuard<'_, Option<(Vec<(btleplug::platform::Peripheral, Option<i16>, Option<String>, String)>, Instance)>>

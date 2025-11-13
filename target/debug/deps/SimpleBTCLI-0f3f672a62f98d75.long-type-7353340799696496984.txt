@@ -1,0 +1,1 @@
+impl Future<Output = tokio::sync::MutexGuard<'_, Vec<(btleplug::platform::Peripheral, Option<i16>, Option<String>, String)>>>

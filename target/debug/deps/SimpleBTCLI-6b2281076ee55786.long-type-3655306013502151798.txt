@@ -1,0 +1,1 @@
+Arc<std::sync::Mutex<Vec<(btleplug::platform::Peripheral, Option<i16>, Option<String>, String)>>>

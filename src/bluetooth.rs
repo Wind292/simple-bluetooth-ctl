@@ -1,10 +1,11 @@
+use std::cmp;
+
 use btleplug::platform::{Adapter, Peripheral};
 use btleplug::{platform::Manager};
 use btleplug::api::{Central, Manager as _, ScanFilter};
 use btleplug::api::Peripheral as APIPeripheral;
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::time::Instant;
+
+#[derive(Clone, Debug)]
 pub struct Instance {
     manager: Option<Manager>,
     adapter: Option<Adapter>,
@@ -14,7 +15,7 @@ pub struct Instance {
 
 impl Instance {
     // Creates an uninitalized `Instance`
-    pub async fn new() -> Self {
+    pub fn new() -> Self {
         Instance{ 
             manager: None,
             adapter: None,
@@ -36,15 +37,22 @@ impl Instance {
 
 
     // Takes about 3ms which is plenty fast
-    pub async fn get_scanned_devices(&mut self) -> Vec<(Peripheral, Option<i16>)> {
-        let mut devices  = self.adapter.clone().unwrap().peripherals().await.unwrap();
-        let mut device_signal_list: Vec<(Peripheral, Option<i16>)> = Vec::new();
+    pub async fn get_scanned_devices(&mut self) -> Vec<(Peripheral, Option<i16>, Option<String>, String)> { // Peripheral, signal strength, display name, mac adress
+        let devices  = self.adapter.clone().unwrap().peripherals().await.unwrap();
+        let mut device_signal_list: Vec<(Peripheral, Option<i16>, Option<String>, String)> = Vec::new();
+
         for device in devices {
-            let signal = device.properties().await.unwrap().unwrap().rssi;
-            device_signal_list.push((device, signal));
+            let properties = device.properties().await.unwrap_or_default().unwrap_or_default();
+
+            let adress = properties.address.to_string();
+            let signal = properties.rssi;
+            let name = properties.local_name;
+            device_signal_list.push((device, signal, name, adress));
         }
-        device_signal_list.sort_by(|d1, d2| {d1.1.cmp(&d2.1)});
+
+        device_signal_list.sort_by(|d1, d2| {sort_devices_check((d1.1, d1.2.clone(), d1.3.clone()), (d2.1, d2.2.clone(), d1.3.clone()))});
         device_signal_list
+
     }
 
     async fn update_adapters(&mut self){
@@ -57,4 +65,17 @@ impl Instance {
             }
         }
     }
+}
+
+
+fn sort_devices_check(
+    (rssi1, display_name1, adress1): (Option<i16>, Option<String>, String),
+    (rssi2, display_name2, adress2): (Option<i16>, Option<String>, String)
+) -> cmp::Ordering {
+    
+    if display_name1.is_some() && display_name2.is_some() {return display_name1.cmp(&display_name2);} 
+
+    return adress1.cmp(&adress2);
+  
+
 }
