@@ -1,4 +1,4 @@
-use std::cmp;
+use std::cmp::{self, Ordering};
 
 use btleplug::platform::{Adapter, Peripheral};
 use btleplug::{platform::Manager};
@@ -50,7 +50,7 @@ impl Instance {
             device_signal_list.push((device, signal, name, adress));
         }
 
-        device_signal_list.sort_by(|d1, d2| {sort_devices_check((d1.1, d1.2.clone(), d1.3.clone()), (d2.1, d2.2.clone(), d1.3.clone()))});
+        device_signal_list.sort_by(|d1, d2| {sort_devices_check((d1.1, d1.2.clone(), d1.3.clone()), (d2.1, d2.2.clone(), d2.3.clone()))});
         device_signal_list
 
     }
@@ -69,13 +69,22 @@ impl Instance {
 
 
 fn sort_devices_check(
-    (rssi1, display_name1, adress1): (Option<i16>, Option<String>, String),
-    (rssi2, display_name2, adress2): (Option<i16>, Option<String>, String)
+    (mut rssi1, display_name1, adress1): (Option<i16>, Option<String>, String),
+    (mut rssi2, display_name2, adress2): (Option<i16>, Option<String>, String)
 ) -> cmp::Ordering {
-    
-    if display_name1.is_some() && display_name2.is_some() {return display_name1.cmp(&display_name2);} 
+    if rssi1.is_some() && rssi2.is_some() {
+        if rssi1.unwrap()/25 != rssi2.unwrap()/25 {
+            return (rssi2.unwrap()).cmp(&rssi1.unwrap())
+        }
+    }
 
-    return adress1.cmp(&adress2);
-  
 
+    match (display_name1, display_name2) {
+        (Some(d1), Some(d2)) => return d1.cmp(&d2).then(adress1.cmp(&adress2)),
+        (None, Some(_)) => return cmp::Ordering::Greater,
+        (Some(_), None) => return cmp::Ordering::Less,
+        (None, None) => {adress1.cmp(&adress2)}
+    }
 }
+
+

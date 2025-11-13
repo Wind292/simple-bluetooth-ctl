@@ -14,6 +14,8 @@ use tokio::sync::Mutex;
 use std::time::Duration;
 
 
+
+
 use crate::bluetooth::Instance;
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -78,7 +80,7 @@ fn render(frame: &mut Frame<'_>, devices: &Vec<(Peripheral, Option<i16>, Option<
 }
 
 fn format_line(adress: String, name: Option<String>, connection_strength: Option<i16>, term_width: u64) -> String {
-   format!("{:?} - {}", name, adress) 
+   format!("{:?} - {}, {:?}", name, adress, connection_strength ) 
 }
 
 async fn background_device_update(devices_mutex: Arc<Mutex<Vec<(Peripheral, Option<i16>, Option<String>, String)>>>, instance_mutex: Arc<Mutex<Instance>>) {
@@ -87,6 +89,6 @@ async fn background_device_update(devices_mutex: Arc<Mutex<Vec<(Peripheral, Opti
         let updated_devices = instance.get_scanned_devices().await;
         let mut devices = devices_mutex.lock().await;
         *devices = updated_devices.clone();
-        tokio::time::sleep(Duration::from_millis(5)).await;
+        tokio::time::sleep(Duration::from_millis(1)).await;
     }
 }
